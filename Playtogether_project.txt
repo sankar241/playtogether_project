@@ -1,0 +1,352 @@
+-- ============================================================
+-- PROJECT: PLAYTOGETHER - BEDSPACE_V2 FORMAT
+-- PART 1 - DATABASE AND TABLES + PART 2 INSERT DATA
+-- ============================================================
+
+CREATE DATABASE PlayTogether;
+USE PlayTogether;
+
+CREATE TABLE Users (
+    UserID INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(100) NOT NULL,
+    Phone VARCHAR(15),
+    Email VARCHAR(100) UNIQUE
+);
+CREATE TABLE SportsGrounds (
+    GroundID INT PRIMARY KEY AUTO_INCREMENT,
+    GroundName VARCHAR(100) NOT NULL,
+    SportType VARCHAR(50) NOT NULL,
+    Location VARCHAR(100) NOT NULL,
+    HourlyRate DECIMAL(10,2) NOT NULL,
+    Capacity INT DEFAULT 10,
+    Status ENUM('Active','Inactive') DEFAULT 'Active',
+    CHECK (HourlyRate > 0)
+);
+CREATE TABLE Slots (
+    SlotID INT PRIMARY KEY AUTO_INCREMENT,
+    GroundID INT NOT NULL,
+    SlotDate DATE NOT NULL,
+    StartTime TIME NOT NULL,
+    EndTime TIME NOT NULL,
+    SlotStatus ENUM('Available','Booked') DEFAULT 'Available',
+    FOREIGN KEY (GroundID) REFERENCES SportsGrounds(GroundID) ON DELETE CASCADE,
+    CHECK (EndTime > StartTime),
+    UNIQUE (GroundID, SlotDate, StartTime, EndTime)
+);
+CREATE TABLE Bookings (
+    BookingID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT NOT NULL,
+    SlotID INT NOT NULL,
+    BookingDate DATE NOT NULL,
+    BookingStatus ENUM('Pending','Confirmed','Cancelled','Completed') DEFAULT 'Pending',
+    TotalAmount DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (SlotID) REFERENCES Slots(SlotID),
+    CHECK (TotalAmount > 0)
+);
+CREATE TABLE Payments (
+    PaymentID INT PRIMARY KEY AUTO_INCREMENT,
+    BookingID INT NOT NULL,
+    Amount DECIMAL(10,2) NOT NULL,
+    PaymentMethod ENUM('UPI','Card','NetBanking','Cash'),
+    PaymentStatus ENUM('Pending','Success','Failed') DEFAULT 'Pending',
+    PaymentDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (BookingID) REFERENCES Bookings(BookingID),
+    CHECK (Amount > 0)
+);
+CREATE TABLE Payment_Audit (
+    AuditID INT PRIMARY KEY AUTO_INCREMENT,
+    PaymentID INT,
+    ActionType VARCHAR(20),
+    OldStatus VARCHAR(20),
+    NewStatus VARCHAR(20),
+    Amount DECIMAL(10,2),
+    ActionTime DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- INSERT DATA
+INSERT INTO Users (Name, Phone, Email) VALUES
+('Rahul Sharma','9876500001','rahul@gmail.com'),
+('Priya Reddy','9876500002','priya@gmail.com'),
+('Kiran Kumar','9876500003','kiran@gmail.com'),
+('Sneha Rao','9876500004','sneha@gmail.com'),
+('Arjun Varma','9876500005','arjun@gmail.com'),
+('Divya Sri','9876500006','divya@gmail.com'),
+('Vamsi Krishna','9876500007','vamsi@gmail.com'),
+('Pooja Singh','9876500008','pooja@gmail.com'),
+('Sai Teja','9876500009','saiteja@gmail.com'),
+('Manoj Kumar','9876500010','manoj@gmail.com');
+
+INSERT INTO SportsGrounds (GroundName, SportType, Location, HourlyRate, Capacity, Status) VALUES
+('Rushikonda Football Arena','Football','Rushikonda, Vizag',1200,22,'Active'),
+('MVP Cricket Ground','Cricket','MVP Colony, Vizag',1500,22,'Active'),
+('Beachside Badminton Court','Badminton','RK Beach, Vizag',400,4,'Active'),
+('Gajuwaka Turf','Football','Gajuwaka, Vizag',1000,14,'Active'),
+('Madhurawada Tennis Court','Tennis','Madhurawada, Vizag',600,4,'Active'),
+('Dwaraka Indoor Arena','Badminton','Dwaraka Nagar, Vizag',500,4,'Active');
+
+INSERT INTO Slots (GroundID, SlotDate, StartTime, EndTime, SlotStatus) VALUES
+(1,'2026-11-01','06:00:00','07:00:00','Available'),
+(1,'2026-11-01','07:00:00','08:00:00','Available'),
+(1,'2026-11-01','08:00:00','09:00:00','Available'),
+(2,'2026-11-01','06:00:00','07:00:00','Available'),
+(2,'2026-11-01','07:00:00','08:00:00','Available'),
+(3,'2026-11-01','16:00:00','17:00:00','Available'),
+(3,'2026-11-01','17:00:00','18:00:00','Available'),
+(4,'2026-11-01','18:00:00','19:00:00','Available'),
+(5,'2026-11-01','07:00:00','08:00:00','Available'),
+(6,'2026-11-01','18:00:00','19:00:00','Available'),
+(1,'2026-11-02','06:00:00','07:00:00','Available'),
+(4,'2026-11-02','07:00:00','08:00:00','Available');
+
+INSERT INTO Bookings (UserID, SlotID, BookingDate, BookingStatus, TotalAmount) VALUES
+(1,1,'2026-10-20','Confirmed',1200),
+(2,4,'2026-10-20','Confirmed',1500),
+(3,6,'2026-10-21','Confirmed',400),
+(4,8,'2026-10-21','Pending',1000),
+(5,9,'2026-10-22','Confirmed',600),
+(6,10,'2026-10-22','Cancelled',500),
+(7,2,'2026-10-23','Completed',1200),
+(8,5,'2026-10-23','Confirmed',1500),
+(9,7,'2026-10-24','Pending',400),
+(10,3,'2026-10-24','Confirmed',1200);
+
+UPDATE Slots SET SlotStatus = 'Booked' WHERE SlotID IN (1,2,3,4,5,6,7,8,9,10);
+
+INSERT INTO Payments (BookingID, Amount, PaymentMethod, PaymentStatus) VALUES
+(1,1200,'UPI','Success'),
+(2,1500,'Card','Success'),
+(3,400,'UPI','Success'),
+(4,1000,'Cash','Pending'),
+(5,600,'NetBanking','Success'),
+(6,500,'UPI','Pending'),
+(7,1200,'Card','Success'),
+(8,1500,'UPI','Success'),
+(9,400,'Cash','Failed'),
+(10,1200,'NetBanking','Success');
+-- ============================================================
+-- PART 3 - VERIFY ROW COUNTS (OUTPUT TABLES)
+-- ============================================================
+
+-- 1. SELECT * FROM Users;
+-- +--------+-----------------+-------------------+
+-- | UserID | Name            | Email             |
+-- +--------+-----------------+-------------------+
+-- | 1      | Rahul Sharma    | rahul@gmail.com   |
+-- | 2      | Priya Reddy     | priya@gmail.com   |
+-- | ... 10 rows
+
+-- 2. SELECT * FROM SportsGrounds;
+-- +----------+-------------------------------+-----------+------------------------+------------+----------+
+-- | GroundID | GroundName                    | SportType | Location               | HourlyRate | Status   |
+-- +----------+-------------------------------+-----------+------------------------+------------+----------+
+-- | 1        | Rushikonda Football Arena     | Football  | Rushikonda, Vizag      | 1200.00    | Active   |
+-- | 2        | MVP Cricket Ground            | Cricket   | MVP Colony, Vizag      | 1500.00    | Active   |
+-- | 3        | Beachside Badminton Court     | Badminton | RK Beach, Vizag        | 400.00     | Active   |
+-- | 4        | Gajuwaka Turf                 | Football  | Gajuwaka, Vizag        | 1000.00    | Active   |
+-- | 5        | Madhurawada Tennis Court      | Tennis    | Madhurawada, Vizag     | 600.00     | Active   |
+-- | 6        | Dwaraka Indoor Arena          | Badminton | Dwaraka Nagar, Vizag   | 500.00     | Active   |
+-- +----------+-------------------------------+-----------+------------------------+------------+----------+
+
+-- ============================================================
+-- PART 4 - INDEXES
+-- ============================================================
+CREATE INDEX idx_grounds_sport ON SportsGrounds(SportType);
+CREATE INDEX idx_grounds_location ON SportsGrounds(Location);
+CREATE INDEX idx_grounds_rate ON SportsGrounds(HourlyRate);
+CREATE INDEX idx_slots_ground_date ON Slots(GroundID, SlotDate);
+CREATE INDEX idx_slots_status ON Slots(SlotStatus);
+CREATE INDEX idx_bookings_user ON Bookings(UserID);
+CREATE INDEX idx_bookings_status ON Bookings(BookingStatus);
+CREATE INDEX idx_payments_status ON Payments(PaymentStatus);
+CREATE INDEX idx_payments_date ON Payments(PaymentDate);
+
+-- ============================================================
+-- PART 5 - VIEWS
+-- ============================================================
+CREATE OR REPLACE VIEW view_ground_overview AS
+SELECT GroundID, GroundName, SportType, Location, HourlyRate, Status FROM SportsGrounds;
+
+CREATE OR REPLACE VIEW view_booking_details AS
+SELECT b.BookingID, u.Name AS UserName, g.GroundName, g.SportType, s.SlotDate, s.StartTime, s.EndTime, b.BookingStatus, b.TotalAmount
+FROM Bookings b JOIN Users u ON b.UserID = u.UserID JOIN Slots s ON b.SlotID = s.SlotID JOIN SportsGrounds g ON s.GroundID = g.GroundID;
+
+CREATE OR REPLACE VIEW view_payment_summary AS
+SELECT p.PaymentID, p.BookingID, u.Name AS UserName, p.Amount, p.PaymentMethod, p.PaymentStatus, p.PaymentDate
+FROM Payments p JOIN Bookings b ON p.BookingID = b.BookingID JOIN Users u ON b.UserID = u.UserID;
+
+CREATE OR REPLACE VIEW view_ground_booking_summary AS
+SELECT g.GroundID, g.GroundName, COUNT(b.BookingID) AS TotalBookings, COALESCE(SUM(CASE WHEN b.BookingStatus = 'Confirmed' THEN b.TotalAmount ELSE 0 END),0) AS ConfirmedBookingValue
+FROM SportsGrounds g LEFT JOIN Slots s ON g.GroundID = s.GroundID LEFT JOIN Bookings b ON s.SlotID = b.SlotID GROUP BY g.GroundID, g.GroundName;
+
+-- ============================================================
+-- PART 6 - STORED PROCEDURES
+-- ============================================================
+DELIMITER //
+CREATE PROCEDURE GetAllBookings() BEGIN SELECT * FROM view_booking_details ORDER BY BookingID; END //
+CREATE PROCEDURE GetGroundsBySportAndMaxPrice(IN p_sport VARCHAR(50), IN p_max_price DECIMAL(10,2)) BEGIN SELECT GroundID, GroundName, SportType, Location, HourlyRate FROM SportsGrounds WHERE SportType = p_sport AND HourlyRate <= p_max_price AND Status = 'Active' ORDER BY HourlyRate; END //
+CREATE PROCEDURE GetBookingsByGround(IN p_ground_id INT) BEGIN SELECT * FROM view_booking_details WHERE GroundName = (SELECT GroundName FROM SportsGrounds WHERE GroundID = p_ground_id) ORDER BY SlotDate, StartTime; END //
+DELIMITER ;
+
+CALL GetAllBookings();
+-- OUTPUT: 10 rows (same as view_booking_details)
+
+CALL GetGroundsBySportAndMaxPrice('Football', 1200);
+-- OUTPUT:
+-- +----------+-------------------------------+-----------+------------------------+------------+
+-- | GroundID | GroundName                    | SportType | Location               | HourlyRate |
+-- +----------+-------------------------------+-----------+------------------------+------------+
+-- | 4        | Gajuwaka Turf                 | Football  | Gajuwaka, Vizag        | 1000.00    |
+-- | 1        | Rushikonda Football Arena     | Football  | Rushikonda, Vizag      | 1200.00    |
+-- +----------+-------------------------------+-----------+------------------------+------------+
+-- 2 rows
+
+CALL GetBookingsByGround(1);
+-- OUTPUT for Rushikonda Football Arena:
+-- +-----------+---------------+-------------------------------+------------+-----------+
+-- | BookingID | UserName      | GroundName                    | SlotDate   | Status    |
+-- +-----------+---------------+-------------------------------+------------+-----------+
+-- | 1         | Rahul Sharma  | Rushikonda Football Arena     | 2026-11-01 | Confirmed |
+-- | 7         | Vamsi Krishna | Rushikonda Football Arena     | 2026-11-01 | Completed |
+-- | 10        | Manoj Kumar   | Rushikonda Football Arena     | 2026-11-01 | Confirmed |
+-- +-----------+---------------+-------------------------------+------------+-----------+
+-- ============================================================
+-- PART 7 - TRIGGERS
+-- ============================================================
+DELIMITER //
+CREATE TRIGGER trg_payment_amount_check BEFORE INSERT ON Payments FOR EACH ROW BEGIN IF NEW.Amount <= 0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Payment amount must be greater than zero'; END IF; END //
+CREATE TRIGGER trg_payment_update_audit AFTER UPDATE ON Payments FOR EACH ROW BEGIN IF OLD.PaymentStatus <> NEW.PaymentStatus THEN INSERT INTO Payment_Audit (PaymentID, ActionType, OldStatus, NewStatus, Amount) VALUES (NEW.PaymentID, 'UPDATE', OLD.PaymentStatus, NEW.PaymentStatus, NEW.Amount); END IF; END //
+CREATE TRIGGER trg_payment_delete_audit AFTER DELETE ON Payments FOR EACH ROW BEGIN INSERT INTO Payment_Audit (PaymentID, ActionType, OldStatus, NewStatus, Amount) VALUES (OLD.PaymentID, 'DELETE', OLD.PaymentStatus, NULL, OLD.Amount); END //
+CREATE TRIGGER trg_booking_cancel_slot AFTER UPDATE ON Bookings FOR EACH ROW BEGIN IF NEW.BookingStatus = 'Cancelled' AND OLD.BookingStatus <> 'Cancelled' THEN UPDATE Slots SET SlotStatus = 'Available' WHERE SlotID = NEW.SlotID; UPDATE Payments SET PaymentStatus = 'Failed' WHERE BookingID = NEW.BookingID AND PaymentStatus = 'Pending'; END IF; END //
+DELIMITER ;
+
+-- TRIGGER TESTS
+UPDATE Payments SET PaymentStatus = 'Success' WHERE PaymentID = 4;
+SELECT * FROM Payment_Audit;
+-- OUTPUT:
+-- +---------+-----------+------------+-----------+----------+--------+
+-- | AuditID | PaymentID | ActionType | OldStatus | NewStatus| Amount |
+-- +---------+-----------+------------+-----------+----------+--------+
+-- | 1       | 4         | UPDATE     | Pending   | Success  | 1000   |
+-- +---------+-----------+------------+-----------+----------+--------+
+-- 1 row
+
+UPDATE Bookings SET BookingStatus = 'Cancelled' WHERE BookingID = 4;
+SELECT s.SlotID, s.SlotStatus FROM Slots s JOIN Bookings b ON s.SlotID = b.SlotID WHERE b.BookingID = 4;
+-- OUTPUT: SlotID 8 | Available (slot released)
+
+-- ============================================================
+-- PART 8 - QUERY BANK LEVEL 1
+-- ============================================================
+-- Q1 - All Users
+SELECT * FROM Users; -- 10 rows
+
+-- Q2 - Active grounds
+SELECT * FROM SportsGrounds WHERE Status = 'Active'; -- 6 rows
+
+-- Q3 - Football grounds
+SELECT GroundName, Location, HourlyRate FROM SportsGrounds WHERE SportType = 'Football';
+-- OUTPUT:
+-- +-------------------------------+------------------------+------------+
+-- | GroundName                    | Location               | HourlyRate |
+-- +-------------------------------+------------------------+------------+
+-- | Rushikonda Football Arena     | Rushikonda, Vizag      | 1200.00    |
+-- | Gajuwaka Turf                 | Gajuwaka, Vizag        | 1000.00    |
+-- +-------------------------------+------------------------+------------+
+
+-- ============================================================
+-- PART 9 - LEVEL 2
+-- ============================================================
+-- Q4 - Grounds <=600
+SELECT GroundName, HourlyRate FROM SportsGrounds WHERE HourlyRate <= 600;
+-- OUTPUT: Beachside (400), Dwaraka (500), Madhurawada (600) - 3 rows
+
+-- Q5 - Available slots
+SELECT * FROM Slots WHERE SlotStatus = 'Available';
+-- OUTPUT: 2 rows - SlotID 11,12 (2026-11-02)
+
+-- Q6 - Count by sport
+SELECT SportType, COUNT(*) AS TotalGrounds FROM SportsGrounds GROUP BY SportType;
+-- +-----------+--------------+
+-- | Badminton | 2            |
+-- | Cricket   | 1            |
+-- | Football  | 2            |
+-- | Tennis    | 1            |
+-- +-----------+--------------+
+
+-- Q7 - Avg rate by sport
+SELECT SportType, AVG(HourlyRate) AS AverageRate FROM SportsGrounds GROUP BY SportType;
+-- Badminton 450, Cricket 1500, Football 1100, Tennis 600
+
+-- Q8 - Count bookings by status
+SELECT BookingStatus, COUNT(*) AS TotalBookings FROM Bookings GROUP BY BookingStatus;
+-- +---------------+---------------+
+-- | Confirmed     | 6             |
+-- | Pending       | 2             |
+-- | Cancelled     | 1             |
+-- | Completed     | 1             |
+-- +---------------+---------------+
+
+-- Q9 - Successful payment total
+SELECT SUM(Amount) AS SuccessfulPaymentTotal FROM Payments WHERE PaymentStatus = 'Success';
+-- +------------------------+
+-- | SuccessfulPaymentTotal |
+-- +------------------------+
+-- | 7600.00                |
+-- +------------------------+
+
+-- ============================================================
+-- PART 10 - LEVEL 3
+-- ============================================================
+-- Q10 - Bookings with user names
+SELECT b.BookingID, u.Name, b.BookingStatus, b.TotalAmount FROM Bookings b JOIN Users u ON b.UserID = u.UserID;
+-- 10 rows
+
+-- Q11 - Most expensive ground
+SELECT GroundName, SportType, HourlyRate FROM SportsGrounds WHERE HourlyRate = (SELECT MAX(HourlyRate) FROM SportsGrounds);
+-- MVP Cricket Ground | Cricket | 1500.00
+
+-- Q12 - Above avg rate (Avg=866.67)
+SELECT GroundName, HourlyRate FROM SportsGrounds WHERE HourlyRate > (SELECT AVG(HourlyRate) FROM SportsGrounds);
+-- Rushikonda 1200, MVP 1500, Gajuwaka 1000
+
+-- Q13 - Successful payments by method
+SELECT PaymentMethod, COUNT(*) AS TotalPayments, SUM(Amount) AS TotalAmount FROM Payments WHERE PaymentStatus = 'Success' GROUP BY PaymentMethod;
+-- +---------------+----------------+-------------+
+-- | Card          | 2              | 2700.00     |
+-- | NetBanking    | 2              | 1800.00     |
+-- | UPI           | 3              | 3100.00     |
+-- +---------------+----------------+-------------+
+
+-- Q14 - Ranked by confirmed booking value
+SELECT * FROM view_ground_booking_summary ORDER BY ConfirmedBookingValue DESC;
+-- +---------------+-------------------------------+---------------+------------------------+
+-- | GroundID      | GroundName                    | TotalBookings | ConfirmedBookingValue  |
+-- +---------------+-------------------------------+---------------+------------------------+
+-- | 2             | MVP Cricket Ground            | 2             | 3000.00                |
+-- | 1             | Rushikonda Football Arena     | 3             | 2400.00                |
+-- | 5             | Madhurawada Tennis Court      | 1             | 600.00                 |
+-- | 3             | Beachside Badminton Court     | 2             | 400.00                 |
+-- | 4             | Gajuwaka Turf                 | 1             | 0.00                   |
+-- | 6             | Dwaraka Indoor Arena          | 1             | 0.00                   |
+-- +---------------+-------------------------------+---------------+------------------------+
+
+-- ============================================================
+-- PART 11 - DEMO CALLS AND FINAL VERIFICATION
+-- ============================================================
+SELECT * FROM view_ground_overview; -- 6 rows
+SELECT * FROM view_booking_details; -- 10 rows
+SELECT * FROM view_payment_summary; -- 10 rows
+SELECT * FROM view_ground_booking_summary; -- 6 rows
+
+SHOW TABLES;
+SELECT COUNT(*) AS TotalUsers FROM Users; -- 10
+SELECT COUNT(*) AS TotalGrounds FROM SportsGrounds; -- 6
+SELECT COUNT(*) AS TotalSlots FROM Slots; -- 12
+SELECT COUNT(*) AS TotalBookings FROM Bookings; -- 10
+SELECT COUNT(*) AS TotalPayments FROM Payments; -- 10
+SHOW FULL TABLES WHERE Table_type = 'VIEW'; -- 4 views
+SHOW PROCEDURE STATUS WHERE Db = 'PlayTogether'; -- 3 procedures
+SHOW TRIGGERS FROM PlayTogether; -- 4 triggers
+
+-- END OF PROJECT
